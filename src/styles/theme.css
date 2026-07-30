@@ -4,35 +4,49 @@
  */
 :root {
   /* Brand colors */
-  --color-primary: #c2410c;
-  --color-primary-hover: #9a3412;
-  --color-primary-light: #ea580c;
-  --color-primary-muted: #ffedd5;
+  --brand-primary: #8dcf7c;
+  --brand-primary-hover: #76b76b;
+  --brand-primary-light: #dff5db;
+  --brand-primary-muted: #eef9eb;
 
-  --color-secondary: #1f2937;
-  --color-secondary-hover: #111827;
-  --color-secondary-light: #374151;
+  --brand-secondary: #173b2f;
+  --brand-secondary-hover: #102a22;
+  --brand-secondary-light: #2d5446;
 
-  --color-background: #ffffff;
-  --color-background-subtle: #fafafa;
+  --brand-accent: #b68a2d;
+  --brand-accent-soft: #f7ebc6;
 
-  --color-accent: #f3f4f6;
-  --color-accent-dark: #e5e7eb;
-  --color-accent-darker: #d1d5db;
+  --color-primary: var(--brand-primary);
+  --color-primary-hover: var(--brand-primary-hover);
+  --color-primary-light: var(--brand-primary-light);
+  --color-primary-muted: var(--brand-primary-muted);
+
+  --color-secondary: var(--brand-secondary);
+  --color-secondary-hover: var(--brand-secondary-hover);
+  --color-secondary-light: var(--brand-secondary-light);
+
+  --color-background: #fcfcfb;
+  --color-background-subtle: #f4f5f4;
+  --color-surface: #f4f5f4;
+  --color-surface-elevated: #ffffff;
+
+  --color-accent: var(--brand-accent-soft);
+  --color-accent-dark: #e8ece7;
+  --color-accent-darker: #d7dfd8;
 
   /* Semantic colors */
-  --color-text-primary: #1f2937;
-  --color-text-secondary: #6b7280;
+  --color-text-primary: #1f2523;
+  --color-text-secondary: #5d6764;
   --color-text-inverse: #ffffff;
   --color-text-on-primary: #ffffff;
 
-  --color-border: #e5e7eb;
-  --color-border-strong: #d1d5db;
+  --color-border: #dfe6df;
+  --color-border-strong: #c6d0c7;
 
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-error: #dc2626;
-  --color-info: #2563eb;
+  --color-success: #2f7a41;
+  --color-warning: #b7791f;
+  --color-error: #c73b3b;
+  --color-info: #3c6b8a;
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -45,9 +59,9 @@
   --radius-xl: 0.75rem;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 2px 0 rgb(23 59 47 / 0.06);
+  --shadow-md: 0 12px 30px -20px rgb(23 59 47 / 0.28);
+  --shadow-lg: 0 20px 45px -24px rgb(23 59 47 / 0.32);
 }
 
 @theme inline {
@@ -63,6 +77,8 @@
 
   --color-background: var(--color-background);
   --color-background-subtle: var(--color-background-subtle);
+  --color-surface: var(--color-surface);
+  --color-surface-elevated: var(--color-surface-elevated);
 
   --color-accent: var(--color-accent);
   --color-accent-dark: var(--color-accent-dark);

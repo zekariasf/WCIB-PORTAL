@@ -19,10 +19,10 @@ function NavItem({ link, onNavigate }) {
       onClick={onNavigate}
       className={({ isActive: navActive }) =>
         cn(
-          'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          'rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-200',
           (link.matchPrefix ? isActive : navActive)
-            ? 'bg-primary-muted text-primary'
-            : 'text-secondary hover:bg-accent hover:text-secondary',
+            ? 'bg-primary-muted text-primary shadow-sm'
+            : 'text-secondary hover:bg-primary-muted hover:text-primary',
         )
       }
     >
@@ -47,13 +47,13 @@ function Navbar() {
   }, [mobileOpen])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           to={ROUTES.PUBLIC.HOME}
           className="group flex shrink-0 items-center gap-2.5"
         >
-          <span className="flex size-9 items-center justify-center rounded-md bg-primary text-sm font-bold text-text-on-primary">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-text-on-primary shadow-[0_10px_20px_-12px_rgba(141,207,124,0.8)]">
             WC
           </span>
           <span className="flex flex-col leading-tight">
@@ -77,6 +77,13 @@ function Navbar() {
 
         <div className="flex items-center gap-2">
           <Button
+            to={ROUTES.PORTAL.LOGIN}
+            variant="outline"
+            className="hidden sm:inline-flex"
+          >
+            Portal
+          </Button>
+          <Button
             to={ROUTES.PUBLIC.BROKERAGE.OPEN_ACCOUNT}
             variant="primary"
             className="hidden sm:inline-flex"
@@ -86,7 +93,7 @@ function Navbar() {
 
           <button
             type="button"
-            className="inline-flex size-10 items-center justify-center rounded-md text-secondary hover:bg-accent lg:hidden"
+            className="inline-flex size-10 items-center justify-center rounded-xl text-secondary hover:bg-primary-muted hover:text-primary lg:hidden"
             onClick={() => setMobileOpen((open) => !open)}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
@@ -108,7 +115,7 @@ function Navbar() {
       <nav
         id="mobile-nav"
         className={cn(
-          'border-t border-border bg-background lg:hidden',
+          'border-t border-border bg-white/95 lg:hidden',
           mobileOpen ? 'block' : 'hidden',
         )}
         aria-label="Mobile navigation"
@@ -117,6 +124,14 @@ function Navbar() {
           {PUBLIC_NAV_LINKS.map((link) => (
             <NavItem key={link.to} link={link} onNavigate={() => setMobileOpen(false)} />
           ))}
+          <Button
+            to={ROUTES.PORTAL.LOGIN}
+            variant="outline"
+            className="mt-3 w-full sm:hidden"
+            onClick={() => setMobileOpen(false)}
+          >
+            Portal
+          </Button>
           <Button
             to={ROUTES.PUBLIC.BROKERAGE.OPEN_ACCOUNT}
             variant="primary"
