@@ -1,0 +1,38 @@
+@import 'tailwindcss';
+@import './styles/theme.css';
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .page {
+    @apply p-8;
+  }
+
+  .page-title,
+  .page h1 {
+    @apply m-0 text-3xl font-semibold text-secondary;
+  }
+}
