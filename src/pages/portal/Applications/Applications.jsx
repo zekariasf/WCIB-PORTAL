@@ -23,11 +23,8 @@ function Applications() {
   const [reviewDraft, setReviewDraft] = useState({ assignedOfficer: 'A. Bekele', status: 'Submitted', reviewNotes: '', rejectionReason: '', missingDocuments: '' })
 
   const filteredApplications = useMemo(() => {
-    const normalizedSearch = search.replace(/\D/g, '')
-
     return applications.filter((application) => {
-      const phone = `${application.personalInformation?.mobile || ''}`.replace(/\D/g, '')
-      const matchesSearch = `${application.applicationNumber} ${application.personalInformation?.fullName} ${phone}`.toLowerCase().includes(search.toLowerCase()) || (normalizedSearch && phone.includes(normalizedSearch))
+      const matchesSearch = `${application.applicationNumber} ${application.personalInformation?.fullName}`.toLowerCase().includes(search.toLowerCase())
       const matchesStatus = statusFilter === 'All' || application.status === statusFilter
       return matchesSearch && matchesStatus
     })

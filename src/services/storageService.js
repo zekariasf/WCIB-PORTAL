@@ -25,23 +25,10 @@ const defaultSettings = {
   },
 }
 
-function getStorage() {
-  if (typeof window === 'undefined') return null
-
-  try {
-    return window.localStorage
-  } catch {
-    return null
-  }
-}
-
 function readStorage(key, fallback) {
   if (typeof window === 'undefined') return fallback
-
-  const storage = getStorage()
-  const raw = storage?.getItem(key)
+  const raw = window.localStorage.getItem(key)
   if (!raw) return fallback
-
   try {
     return JSON.parse(raw)
   } catch {
@@ -51,18 +38,7 @@ function readStorage(key, fallback) {
 
 function writeStorage(key, value) {
   if (typeof window === 'undefined') return
-
-  const storage = getStorage()
-  try {
-    storage?.setItem(key, JSON.stringify(value))
-  } catch {
-    try {
-      window.sessionStorage?.setItem(key, JSON.stringify(value))
-    } catch {
-      // Ignore storage write errors so the app can continue in demo mode.
-    }
-  }
-
+  window.localStorage.setItem(key, JSON.stringify(value))
   window.dispatchEvent(new Event('wegagen:data-updated'))
 }
 

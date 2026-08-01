@@ -38,17 +38,14 @@ function Tracking() {
   const { applications } = useAppContext()
   const [query, setQuery] = useState('')
 
-  const normalizePhone = (value) => String(value || '').replace(/\D/g, '')
-
   const matchedApplication = useMemo(() => {
     if (!query) return applications[0] || null
-
-    const searchTerm = normalizePhone(query)
-
     return applications.find((application) => {
-      const appNumber = application.applicationNumber?.toLowerCase() || ''
-      const mobile = normalizePhone(application.personalInformation?.mobile)
-      return appNumber.includes(query.toLowerCase()) || mobile.includes(searchTerm)
+      const searchTerm = query.toLowerCase()
+      return (
+        application.applicationNumber?.toLowerCase().includes(searchTerm) ||
+        application.personalInformation?.mobile?.toLowerCase().includes(searchTerm)
+      )
     }) || null
   }, [applications, query])
 
