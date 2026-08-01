@@ -23,8 +23,25 @@ function Applications() {
   const [reviewDraft, setReviewDraft] = useState({ assignedOfficer: 'A. Bekele', status: 'Submitted', reviewNotes: '', rejectionReason: '', missingDocuments: '' })
 
   const filteredApplications = useMemo(() => {
+    const searchValue = search.trim().toLowerCase()
+    const numericSearch = searchValue.replace(/\D/g, '')
+
     return applications.filter((application) => {
-      const matchesSearch = `${application.applicationNumber} ${application.personalInformation?.fullName}`.toLowerCase().includes(search.toLowerCase())
+      const candidateFields = [
+        application.applicationNumber,
+        application.personalInformation?.fullName,
+        application.personalInformation?.mobile,
+        application.personalInformation?.tin,
+      ]
+
+      const matchesSearch = candidateFields.some((field) => {
+        if (!field) return false
+        const normalized = field.toString().toLowerCase()
+        const matchesText = searchValue && normalized.includes(searchValue)
+        const matchesDigits = numericSearch && normalized.replace(/\D/g, '').includes(numericSearch)
+        return matchesText || matchesDigits
+      })
+
       const matchesStatus = statusFilter === 'All' || application.status === statusFilter
       return matchesSearch && matchesStatus
     })

@@ -120,6 +120,25 @@ function Orders() {
               <div className="rounded-2xl border border-border bg-white p-4">
                 <p className="text-sm font-semibold text-secondary">Order details</p>
                 <p className="mt-1 text-sm text-text-secondary">{selectedOrder.action} {selectedOrder.quantity} of {selectedOrder.symbol} • ${selectedOrder.currentPrice?.toFixed(2) || 'n/a'}</p>
+                {selectedOrder.feeBreakdown ? (
+                  <div className="mt-3 rounded-xl border border-border bg-background-subtle p-3 text-sm">
+                    <p className="font-semibold text-secondary">Fee breakdown</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-text-secondary">
+                      <div>Notional</div>
+                      <div className="text-right">ETB {selectedOrder.feeBreakdown.notional.toLocaleString()}</div>
+                      <div>Commission</div>
+                      <div className="text-right">ETB {selectedOrder.feeBreakdown.commission.toLocaleString()}</div>
+                      <div>Exchange fee</div>
+                      <div className="text-right">ETB {selectedOrder.feeBreakdown.esxFee.toLocaleString()}</div>
+                      <div>ECMA fee</div>
+                      <div className="text-right">ETB {selectedOrder.feeBreakdown.ecmaFee.toLocaleString()}</div>
+                      <div className="font-semibold">Total fees</div>
+                      <div className="text-right font-semibold">ETB {selectedOrder.feeBreakdown.totalFees.toLocaleString()}</div>
+                      <div className="font-semibold">{selectedOrder.feeBreakdown.isBuy ? 'Total payable' : 'Net proceeds'}</div>
+                      <div className="text-right font-semibold">ETB {selectedOrder.feeBreakdown.totalPayable.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-3">
                 <button type="button" onClick={saveReview} className="rounded-xl border border-border bg-white px-3.5 py-2 text-sm font-semibold text-secondary">Save review</button>

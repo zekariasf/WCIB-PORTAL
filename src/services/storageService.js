@@ -42,15 +42,23 @@ function writeStorage(key, value) {
   window.dispatchEvent(new Event('wegagen:data-updated'))
 }
 
-function serializeDocuments(documents) {
+function buildDocumentStorageKey(applicationNumber, documentType, name) {
+  return `wegagen_app_document_${applicationNumber}_${documentType.replace(/\s+/g, '_')}_${encodeURIComponent(name)}`
+}
+
+function serializeDocuments(documents, applicationNumber) {
   if (!Array.isArray(documents)) return documents
   if (typeof window === 'undefined') return documents
 
-  return documents.map((documentItem, index) => {
+  return documents.map((documentItem) => {
     if (!documentItem?.fileDataUrl) return documentItem
 
-    const storageKey = `wegagen_document_${Date.now()}_${Math.random().toString(36).slice(2)}_${index}`
-    window.sessionStorage.setItem(storageKey, documentItem.fileDataUrl)
+    const storageKey = buildDocumentStorageKey(applicationNumber, documentItem.documentType, documentItem.name)
+    try {
+      window.sessionStorage.setItem(storageKey, documentItem.fileDataUrl)
+    } catch {
+      // if sessionStorage is unavailable or quota exceeded, keep the data URL in the document object
+    }
 
     const { fileDataUrl, ...rest } = documentItem
     return { ...rest, storageKey }
@@ -65,10 +73,36 @@ function hydrateDocuments(documents) {
     if (!documentItem?.storageKey) return documentItem
 
     const fileDataUrl = window.sessionStorage.getItem(documentItem.storageKey)
-    if (!fileDataUrl) return documentItem
-
-    return { ...documentItem, fileDataUrl }
+    return fileDataUrl ? { ...documentItem, fileDataUrl } : documentItem
   })
+}
+
+function buildReceiptStorageKey(orderId, receiptName) {
+  return `wegagen_order_receipt_${orderId}_${encodeURIComponent(receiptName)}`
+}
+
+function serializeReceipt(receipt, orderId) {
+  if (!receipt || typeof receipt !== 'object') return receipt
+  if (!receipt.fileDataUrl) return receipt
+  if (typeof window === 'undefined') return receipt
+
+  const storageKey = buildReceiptStorageKey(orderId, receipt.name || 'receipt')
+  try {
+    window.sessionStorage.setItem(storageKey, receipt.fileDataUrl)
+  } catch {
+    // ignore storage failures for sessionStorage
+  }
+
+  const { fileDataUrl, ...rest } = receipt
+  return { ...rest, storageKey }
+}
+
+function hydrateReceipt(receipt) {
+  if (!receipt || typeof receipt !== 'object' || !receipt.storageKey) return receipt
+  if (typeof window === 'undefined') return receipt
+
+  const fileDataUrl = window.sessionStorage.getItem(receipt.storageKey)
+  return fileDataUrl ? { ...receipt, fileDataUrl } : receipt
 }
 
 function normalizeApplication(application) {
@@ -77,6 +111,15 @@ function normalizeApplication(application) {
   return {
     ...application,
     uploadedDocuments: hydrateDocuments(application.uploadedDocuments),
+  }
+}
+
+function normalizeOrder(order) {
+  if (!order) return order
+
+  return {
+    ...order,
+    paymentReceipt: hydrateReceipt(order.paymentReceipt),
   }
 }
 
@@ -105,7 +148,7 @@ export function getApplications() {
 }
 
 export function getOrders() {
-  return readStorage(STORAGE_KEYS.orders, [])
+  return readStorage(STORAGE_KEYS.orders, []).map(normalizeOrder)
 }
 
 export function getSettings() {
@@ -114,7 +157,7 @@ export function getSettings() {
 
 export function saveApplication(application) {
   const applications = getApplications()
-  const next = [...applications, normalizeApplication({ ...application, uploadedDocuments: serializeDocuments(application.uploadedDocuments) })]
+  const next = [...applications, normalizeApplication({ ...application, uploadedDocuments: serializeDocuments(application.uploadedDocuments, application.applicationNumber) })]
   writeStorage(STORAGE_KEYS.applications, next)
   return next
 }
@@ -127,7 +170,7 @@ export function updateApplication(applicationNumber, updates) {
     const updatedApplication = {
       ...app,
       ...updates,
-      uploadedDocuments: updates.uploadedDocuments ? serializeDocuments(updates.uploadedDocuments) : app.uploadedDocuments,
+      uploadedDocuments: updates.uploadedDocuments ? serializeDocuments(updates.uploadedDocuments, applicationNumber) : app.uploadedDocuments,
     }
 
     return normalizeApplication(updatedApplication)
@@ -139,14 +182,21 @@ export function updateApplication(applicationNumber, updates) {
 
 export function saveOrder(order) {
   const orders = getOrders()
-  const next = [...orders, order]
+  const next = [...orders, normalizeOrder({ ...order, paymentReceipt: serializeReceipt(order.paymentReceipt, order.id) })]
   writeStorage(STORAGE_KEYS.orders, next)
   return next
 }
 
 export function updateOrder(orderId, updates) {
   const orders = getOrders()
-  const next = orders.map((order) => (order.id === orderId ? { ...order, ...updates } : order))
+  const next = orders.map((order) => {
+    if (order.id !== orderId) return order
+    return {
+      ...order,
+      ...updates,
+      paymentReceipt: updates.paymentReceipt ? serializeReceipt(updates.paymentReceipt, orderId) : order.paymentReceipt,
+    }
+  })
   writeStorage(STORAGE_KEYS.orders, next)
   return next
 }

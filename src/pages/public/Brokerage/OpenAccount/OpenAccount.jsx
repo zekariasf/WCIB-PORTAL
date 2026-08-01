@@ -12,13 +12,19 @@ const steps = ['Personal Information', 'Upload Documents', 'Review']
 const documentOptions = [
   { title: 'Passport Photo', description: 'Clear front-facing photo in JPG or PNG format.', accepted: 'JPG, PNG', maxSize: '2MB' },
   { title: 'Signature', description: 'A legible signature image on a plain background.', accepted: 'JPG, PNG', maxSize: '1MB' },
-  { title: 'National ID', description: 'Front and back scans in a single PDF file.', accepted: 'PDF', maxSize: '5MB' },
-  { title: 'Account Opening Form', description: 'Completed account form with client details.', accepted: 'PDF', maxSize: '5MB' },
-  { title: 'Indemnity Form', description: 'Signed indemnity document for onboarding.', accepted: 'PDF', maxSize: '5MB' },
+  { title: 'National ID Front', description: 'Front side of your national ID.', accepted: 'PDF', maxSize: '5MB' },
+  { title: 'National ID Back', description: 'Back side of your national ID.', accepted: 'PDF', maxSize: '5MB' },
+  { title: 'Proof of Residence', description: 'Kebele ID, passport, yellow card, or green card.', accepted: 'PDF, JPG, PNG', maxSize: '5MB' },
+  { title: 'Account Opening Form', description: 'Download, fill, and upload the account opening form.', accepted: 'PDF', maxSize: '5MB' },
+  { title: 'Indemnity Form', description: 'Required only for mobile trading access clients.', accepted: 'PDF', maxSize: '5MB' },
   { title: 'TIN Certificate', description: 'Tax identification certificate for verification.', accepted: 'PDF', maxSize: '5MB' },
 ]
 
-const requiredDocumentTypes = documentOptions.filter((document) => document.title !== 'TIN Certificate').map((document) => document.title)
+const proofOfResidenceOptions = ['Kebele ID', 'Passport', 'Yellow Card', 'Green Card']
+
+const requiredDocumentTypes = documentOptions
+  .filter((document) => !['TIN Certificate', 'Indemnity Form'].includes(document.title))
+  .map((document) => document.title)
 
 function OpenAccount() {
   const { refreshData } = useAppContext()
@@ -33,8 +39,11 @@ function OpenAccount() {
     nationality: 'Ethiopian',
     occupation: 'Investment Analyst',
     email: 'john.mensah@client.com',
-    mobile: '+251 911 000 123',
-    tin: '123456789',
+    mobile: '0911000123',
+    tin: '1234567890',
+    faydaNumber: '1234567890123456',
+    proofOfResidenceType: proofOfResidenceOptions[0],
+    mobileTradingAccess: false,
     residentialAddress: 'Bole, Addis Ababa',
   })
   const [uploadedDocuments, setUploadedDocuments] = useState([])
@@ -42,8 +51,11 @@ function OpenAccount() {
   const [errors, setErrors] = useState({})
 
   const handleChange = (event) => {
-    const { name, value } = event.target
-    setFormData((previous) => ({ ...previous, [name]: value }))
+    const { name, value, type, checked } = event.target
+    const cleanedValue = name === 'tin' || name === 'faydaNumber' ? value.replace(/\D/g, '') : value
+    const nextValue = type === 'checkbox' ? checked : cleanedValue
+
+    setFormData((previous) => ({ ...previous, [name]: nextValue }))
     setErrors((previous) => ({ ...previous, [name]: '' }))
   }
 
@@ -83,7 +95,7 @@ function OpenAccount() {
 
   const validatePersonalInformation = () => {
     const validationErrors = {}
-    const requiredFields = ['fullName', 'gender', 'dateOfBirth', 'nationality', 'occupation', 'mobile', 'email', 'residentialAddress']
+    const requiredFields = ['fullName', 'gender', 'dateOfBirth', 'nationality', 'occupation', 'mobile', 'email', 'residentialAddress', 'tin', 'faydaNumber', 'proofOfResidenceType']
 
     requiredFields.forEach((field) => {
       const value = formData[field]
@@ -96,8 +108,20 @@ function OpenAccount() {
       validationErrors.email = 'Please enter a valid email address.'
     }
 
-    if (formData.mobile && !/^\+?[0-9\s-]{7,15}$/.test(formData.mobile)) {
-      validationErrors.mobile = 'Please enter a valid mobile number.'
+    if (formData.mobile) {
+      const normalized = formData.mobile.replace(/\D/g, '')
+      const mobileValid = /^(09\d{8}|07\d{8}|2519\d{8})$/.test(normalized) || /^(\+2519\d{8})$/.test(formData.mobile)
+      if (!mobileValid) {
+        validationErrors.mobile = 'Please enter a valid local mobile number like 09xxxxxxxx or 07xxxxxxxx.'
+      }
+    }
+
+    if (formData.tin && !/^\d{10}$/.test(formData.tin)) {
+      validationErrors.tin = 'TIN must be exactly 10 digits.'
+    }
+
+    if (formData.faydaNumber && !/^\d{16}$/.test(formData.faydaNumber)) {
+      validationErrors.faydaNumber = 'Fayda number must be exactly 16 digits.'
     }
 
     return validationErrors
@@ -113,7 +137,12 @@ function OpenAccount() {
     }
 
     if (step === 2) {
-      const missingDocuments = requiredDocumentTypes.filter((documentType) => !uploadedDocuments.some((item) => item.documentType === documentType))
+      const requiredDocuments = [...requiredDocumentTypes]
+      if (formData.mobileTradingAccess) {
+        requiredDocuments.push('Indemnity Form')
+      }
+
+      const missingDocuments = requiredDocuments.filter((documentType) => !uploadedDocuments.some((item) => item.documentType === documentType))
       if (missingDocuments.length) {
         setErrors((previous) => ({ ...previous, documents: 'Please upload every required document before continuing.' }))
         return
@@ -131,6 +160,11 @@ function OpenAccount() {
   const handleSubmit = () => {
     if (!isCertified) {
       setErrors((previous) => ({ ...previous, certified: 'Please confirm the accuracy of your information.' }))
+      return
+    }
+
+    if (uploadedDocuments.length === 0) {
+      setErrors((previous) => ({ ...previous, documents: 'Please upload at least one document before submitting.' }))
       return
     }
 
@@ -213,6 +247,18 @@ function OpenAccount() {
                         </Button>
                       </div>
                     </div>
+                    <div className="rounded-2xl border border-border bg-background-subtle p-5">
+                      <p className="text-sm font-semibold text-secondary">Required documents</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <a href="/forms/account-opening-form.pdf" className="rounded-2xl border border-border bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary" download>
+                          Download account opening form
+                        </a>
+                        <a href="/forms/indemnity-form.pdf" className="rounded-2xl border border-border bg-white px-4 py-3 text-sm font-semibold text-secondary hover:border-primary hover:text-primary" download>
+                          Download indemnity form
+                        </a>
+                      </div>
+                      <p className="mt-3 text-sm text-text-secondary">Download the form(s), complete them, then upload them in Step 2.</p>
+                    </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="form-field">
                         <label htmlFor="fullName">Full Name</label>
@@ -251,7 +297,26 @@ function OpenAccount() {
                       </div>
                       <div className="form-field">
                         <label htmlFor="tin">TIN Number</label>
-                        <input id="tin" name="tin" value={formData.tin} onChange={handleChange} placeholder="TIN number" />
+                        <input id="tin" name="tin" value={formData.tin} onChange={handleChange} placeholder="10-digit TIN number" inputMode="numeric" />
+                        {errors.tin ? <p className="mt-2 text-sm text-red-600">{errors.tin}</p> : null}
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="faydaNumber">Fayda Number</label>
+                        <input id="faydaNumber" name="faydaNumber" value={formData.faydaNumber} onChange={handleChange} placeholder="16-digit Fayda number" inputMode="numeric" />
+                        {errors.faydaNumber ? <p className="mt-2 text-sm text-red-600">{errors.faydaNumber}</p> : null}
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="proofOfResidenceType">Proof of residence</label>
+                        <select id="proofOfResidenceType" name="proofOfResidenceType" value={formData.proofOfResidenceType} onChange={handleChange} className="rounded-xl border border-border bg-background-subtle px-3 py-2 text-sm">
+                          {proofOfResidenceOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                        {errors.proofOfResidenceType ? <p className="mt-2 text-sm text-red-600">{errors.proofOfResidenceType}</p> : null}
+                      </div>
+                      <div className="form-field col-span-full">
+                        <label className="flex items-center gap-3 rounded-2xl border border-border bg-background-subtle px-4 py-3">
+                          <input id="mobileTradingAccess" name="mobileTradingAccess" type="checkbox" checked={formData.mobileTradingAccess} onChange={handleChange} className="h-4 w-4 rounded border-border text-primary" />
+                          <span className="text-sm text-secondary">I need mobile trading access (Indemnity form will be required)</span>
+                        </label>
                       </div>
                     </div>
                     <div className="form-field">
@@ -264,43 +329,53 @@ function OpenAccount() {
 
                 {step === 2 && (
                   <div className="space-y-4">
+                    <div className="rounded-2xl border border-border bg-background-subtle p-4 text-sm text-text-secondary">
+                      <p className="font-semibold text-secondary">Document uploads</p>
+                      <p className="mt-2">
+                        Upload each requested document. The indemnity form is optional unless mobile trading access is selected on Step 1.
+                      </p>
+                    </div>
                     <div className="grid gap-4 md:grid-cols-2">
-                      {documentOptions.map((document) => (
-                        <div key={document.title} className="rounded-2xl border border-border bg-background-subtle p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
-                              <FileText className="h-5 w-5" />
+                      {documentOptions.map((document) => {
+                        const isIndemnity = document.title === 'Indemnity Form'
+                        const disabled = isIndemnity && !formData.mobileTradingAccess
+                        return (
+                          <div key={document.title} className={`rounded-2xl border ${disabled ? 'border-border/50 opacity-70' : 'border-border'} bg-background-subtle p-4`}>
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-secondary">{document.title}</h3>
+                                <p className="mt-1 text-sm leading-7 text-text-secondary">{document.description}</p>
+                                <p className="mt-3 text-xs font-medium uppercase tracking-[0.25em] text-text-secondary">{document.accepted} • Max {document.maxSize}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-secondary">{document.title}</h3>
-                              <p className="mt-1 text-sm leading-7 text-text-secondary">{document.description}</p>
-                              <p className="mt-3 text-xs font-medium uppercase tracking-[0.25em] text-text-secondary">{document.accepted} • Max {document.maxSize}</p>
-                            </div>
-                          </div>
 
-                          <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-primary/50 bg-white p-4 text-center">
-                            <UploadCloud className="h-6 w-6 text-primary" />
-                            <span className="mt-2 text-sm font-semibold text-secondary">Upload {document.title}</span>
-                            <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="sr-only" onChange={(event) => handleFileUpload(document.title, event)} />
-                          </label>
+                            <label className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-dashed ${disabled ? 'border-border/50 bg-white/60 text-text-secondary' : 'border-primary/50 bg-white'} p-4 text-center ${disabled ? 'pointer-events-none' : ''}`}>
+                              <UploadCloud className="h-6 w-6 text-primary" />
+                              <span className="mt-2 text-sm font-semibold text-secondary">Upload {document.title}</span>
+                              <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="sr-only" disabled={disabled} onChange={(event) => handleFileUpload(document.title, event)} />
+                            </label>
 
-                          {uploadedDocuments.some((item) => item.documentType === document.title) ? (
-                            <div className="mt-3 space-y-2">
-                              {uploadedDocuments.filter((item) => item.documentType === document.title).map((documentItem) => (
-                                <div key={`${document.title}-${documentItem.name}`} className="flex items-center justify-between rounded-2xl border border-border bg-white px-3 py-3 text-sm text-text-secondary">
-                                  <div>
-                                    <p className="font-medium text-secondary">{documentItem.name}</p>
-                                    <p className="text-xs text-text-secondary">{documentItem.size} • {documentItem.status}</p>
+                            {uploadedDocuments.some((item) => item.documentType === document.title) ? (
+                              <div className="mt-3 space-y-2">
+                                {uploadedDocuments.filter((item) => item.documentType === document.title).map((documentItem) => (
+                                  <div key={`${document.title}-${documentItem.name}`} className="flex items-center justify-between rounded-2xl border border-border bg-white px-3 py-3 text-sm text-text-secondary">
+                                    <div>
+                                      <p className="font-medium text-secondary">{documentItem.name}</p>
+                                      <p className="text-xs text-text-secondary">{documentItem.size} • {documentItem.status}</p>
+                                    </div>
+                                    <button type="button" onClick={() => removeDocument(document.title)} className="rounded-lg border border-border p-2 text-secondary hover:border-primary hover:text-primary">
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
                                   </div>
-                                  <button type="button" onClick={() => removeDocument(document.title)} className="rounded-lg border border-border p-2 text-secondary hover:border-primary hover:text-primary">
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      ))}
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        )
+                      })}
                     </div>
 
                     {errors.documents ? <p className="text-sm text-red-600">{errors.documents}</p> : null}
@@ -314,7 +389,11 @@ function OpenAccount() {
                       <div className="mt-4 space-y-2 text-sm text-text-secondary">
                         <p><span className="font-semibold text-secondary">Name:</span> {formData.fullName}</p>
                         <p><span className="font-semibold text-secondary">Email:</span> {formData.email}</p>
+                        <p><span className="font-semibold text-secondary">Mobile:</span> {formData.mobile}</p>
                         <p><span className="font-semibold text-secondary">TIN:</span> {formData.tin}</p>
+                        <p><span className="font-semibold text-secondary">Fayda:</span> {formData.faydaNumber}</p>
+                        <p><span className="font-semibold text-secondary">Proof of residence:</span> {formData.proofOfResidenceType}</p>
+                        <p><span className="font-semibold text-secondary">Mobile trading access:</span> {formData.mobileTradingAccess ? 'Yes' : 'No'}</p>
                       </div>
                     </div>
                     <div className="rounded-2xl border border-border bg-background-subtle p-5">
